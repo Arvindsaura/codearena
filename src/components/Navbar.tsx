@@ -49,9 +49,7 @@ export function Navbar() {
                 <DropdownMenuItem onClick={() => signOut()}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Button onClick={() => signIn()}>Sign In</Button>
-          )}
+          ) : null}
         </div>
       </div>
     </nav>

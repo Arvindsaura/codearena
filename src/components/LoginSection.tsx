@@ -15,10 +15,22 @@ export function LoginSection() {
     if (!username.trim()) return;
     
     setIsLoading(true);
-    await signIn("credentials", {
-      username: username.trim(),
-      callbackUrl: "/",
-    });
+    try {
+      const result = await signIn("credentials", {
+        username: username.trim(),
+        redirect: false,
+      });
+
+      if (result?.error) {
+        console.error("Login failed:", result.error);
+      } else {
+        window.location.reload(); // Hard refresh to update session everywhere
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
