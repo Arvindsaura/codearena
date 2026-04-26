@@ -27,7 +27,7 @@ export async function GET() {
   });
 
   // Remove duplicates
-  const uniqueDates = [...new Set(activeDates)].sort((a, b) => b - a);
+  const uniqueDates = Array.from(new Set(activeDates)).sort((a, b) => b - a);
 
   const ONE_DAY = 86400000;
   const today = new Date();
