@@ -1,13 +1,10 @@
 import { Navbar } from "@/components/Navbar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { Dashboard } from "@/components/Dashboard";
-
 import { prisma } from "@/lib/prisma";
-
-import { Bot, Code2, Rocket, Swords, Trophy, Activity, LogIn } from "lucide-react";
-import Link from "next/link";
+import { Bot, Code2, Trophy, Activity, Swords } from "lucide-react";
+import { LoginSection } from "@/components/LoginSection";
 
 export default async function Home() {
   const session = await getServerSession(authOptions);
@@ -20,7 +17,7 @@ export default async function Home() {
     const userWithDbData = { ...session.user, leetcodeUser: dbUser?.leetcodeUser };
 
     return (
-      <main className="min-h-screen bg-background">
+      <main className="min-h-screen bg-background text-foreground">
         <Navbar />
         <div className="container mx-auto py-8 px-4 md:px-8">
           <Dashboard user={userWithDbData} />
@@ -53,16 +50,10 @@ export default async function Home() {
           </h1>
           
           <p className="text-xl md:text-2xl text-zinc-400 w-full md:w-3/4 mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-200">
-            Form private battle rooms, auto-sync your daily accepted problems, and let Gemini AI grade your absolute code quality. 
+            No accounts. No signups. Just enter your username and start battling.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
-            <a href="/api/auth/signin" className="group relative inline-flex items-center gap-2 px-8 py-4 font-bold text-white bg-white/10 rounded-full overflow-hidden transition-all hover:bg-white/20 border border-white/20 hover:scale-105 active:scale-95 shadow-[0_0_40px_rgba(168,85,247,0.4)]">
-              <div className="absolute inset-0 bg-gradient-to-r from-fuchsia-600 to-violet-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <LogIn className="w-5 h-5 relative z-10" />
-              <span className="relative z-10">Start Competing Now</span>
-            </a>
-          </div>
+          <LoginSection />
         </div>
       </section>
 

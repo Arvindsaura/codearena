@@ -1,5 +1,4 @@
 import { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "./prisma";
@@ -7,25 +6,30 @@ import { prisma } from "./prisma";
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
-    // Demo login for local development
     CredentialsProvider({
-      name: "Demo Account",
+      name: "LeetCode Username",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "demo@codearena.com" },
-        name: { label: "Name", type: "text", placeholder: "John Doe" }
+        username: { label: "Username", type: "text", placeholder: "leetcode_user" },
       },
       async authorize(credentials) {
-        if (!credentials?.email) return null;
+        if (!credentials?.username) return null;
         
-        let user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+        // Find or create user based ONLY on username
+        let user = await prisma.user.findFirst({
+          where: { 
+            OR: [
+              { leetcodeUser: credentials.username },
+              { name: credentials.username }
+            ]
+          }
         });
 
         if (!user) {
           user = await prisma.user.create({
             data: {
-              email: credentials.email,
-              name: credentials.name || "Demo User"
+              name: credentials.username,
+              leetcodeUser: credentials.username,
+              email: `${credentials.username}@codearena.anon`, // Temporary internal email
             }
           });
         }
@@ -34,14 +38,9 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           name: user.name,
           email: user.email,
-          image: "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user.email,
+          image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
         };
       }
-    }),
-    
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     }),
   ],
   session: {
@@ -61,5 +60,8 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_local_development",
+  pages: {
+    signIn: "/", // Redirect to home for custom login
+  },
+  secret: process.env.NEXTAUTH_SECRET || "codearena_secret",
 };
