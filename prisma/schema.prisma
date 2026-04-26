@@ -1,0 +1,176 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  leetcodeUser  String?
+  
+  accounts      Account[]
+  sessions      Session[]
+  roomMembers   RoomMember[]
+  submissions   ProblemSubmission[]
+  codeSubmits   CodeSubmission[]
+  scoreRecords  ScoreRecord[]
+  contestResults ContestResult[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Room {
+  id        String   @id @default(cuid())
+  name      String
+  code      String   @unique
+  createdBy String
+  
+  members   RoomMember[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RoomMember {
+  id        String   @id @default(cuid())
+  userId    String
+  roomId    String
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, roomId])
+}
+
+model ProblemSubmission {
+  id             String   @id @default(cuid())
+  userId         String
+  problemSlug    String
+  status         String
+  timestamp      Int
+  attempts       Int      @default(1)
+  isAccepted     Boolean  @default(false)
+  difficulty     String?
+  date           DateTime 
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  codeSubmissions CodeSubmission[]
+  
+  createdAt      DateTime @default(now())
+  
+  @@unique([userId, problemSlug, date])
+}
+
+model CodeSubmission {
+  id             String   @id @default(cuid())
+  userId         String
+  problemSlug    String
+  submissionId   String?
+  code           String
+  date           DateTime
+  
+  codeQuality    Int?
+  complexityScore Int?
+  aiReview       String?
+  
+  problemSubmit  ProblemSubmission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, problemSlug, date])
+}
+
+model ScoreRecord {
+  id             String   @id @default(cuid())
+  userId         String
+  date           DateTime
+  
+  baseScore      Float    @default(0)
+  difficultyMult Float    @default(1.0)
+  weightedScore  Float    @default(0)
+  streakBonus    Float    @default(0)
+  speedBonus     Float    @default(0)
+  finalScore     Float    @default(0)
+  
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, date])
+}
+
+model Contest {
+  id             String   @id @default(cuid())
+  titleSlug      String   @unique
+  name           String
+  startTime      DateTime
+  
+  results        ContestResult[]
+
+  createdAt      DateTime @default(now())
+}
+
+model ContestResult {
+  id             String   @id @default(cuid())
+  userId         String
+  contestId      String
+  
+  rank           Int
+  problemsSolved Int
+  penalty        Int
+  score          Float
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contest        Contest  @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  createdAt      DateTime @default(now())
+
+  @@unique([userId, contestId])
+}
