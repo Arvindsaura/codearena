@@ -34,8 +34,8 @@ export async function GET() {
     const submissions = response.data?.data?.recentSubmissionList || [];
     
     // Group by problemSlug for today
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Start of today
+    const now = new Date();
+    const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     for (const sub of submissions) {
       const subDate = new Date(parseInt(sub.timestamp) * 1000);

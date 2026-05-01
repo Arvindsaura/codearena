@@ -57,20 +57,20 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
   const room = member.room;
   const memberIds = room.members.map(m => m.user.id);
   
+  // 🕒 Standardized UTC Midnight for consistent scoring across timezones
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  today.setHours(0, 0, 0, 0);
-  const startOfTodayUTC = new Date(today.getTime() - (12 * 60 * 60 * 1000));
+  const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const marathonStart = new Date(new Date(room.lastRestartedAt).setUTCHours(0, 0, 0, 0));
 
   // 🚀 Parallel Data Fetching
   const [scores, recentActivity, roomSubmissions, todayScores] = await Promise.all([
-    // 1. Aggregate Scores for the current cycle
+    // 1. Aggregate Scores for the current cycle (Full Marathon)
     prisma.scoreRecord.groupBy({
       by: ['userId'],
       _sum: { finalScore: true, baseScore: true },
       where: { 
         userId: { in: memberIds },
-        date: { gte: new Date(new Date(room.lastRestartedAt).setHours(0, 0, 0, 0)) } // Start of the restart day
+        date: { gte: marathonStart }
       }
     }),
     // 2. Recent Activity Feed
@@ -81,17 +81,17 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
         problemSubmit: true
       },
       orderBy: { createdAt: 'desc' },
-      take: 20 // Reduced from 50 for speed
+      take: 20
     }),
-    // 3. Problem Submissions for the current cycle (Critical optimization)
+    // 3. Problem Submissions for the current cycle
     prisma.problemSubmission.findMany({
       where: { 
         userId: { in: memberIds },
-        date: { gte: room.lastRestartedAt } // Only current cycle
+        date: { gte: marathonStart }
       },
       include: { 
         codeSubmissions: {
-          take: 1, // We only need the latest code evaluation for stats
+          take: 1,
           orderBy: { createdAt: 'desc' }
         } 
       }
@@ -100,7 +100,7 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
     prisma.scoreRecord.findMany({
       where: { 
         userId: { in: memberIds },
-        date: { gte: startOfTodayUTC }
+        date: { gte: todayStart }
       }
     })
   ]);

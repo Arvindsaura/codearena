@@ -71,8 +71,8 @@ export async function POST(req: Request, { params }: { params: { roomId: string 
   });
 
   // 5. Reset today's scores for all members so they start from zero immediately
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   await prisma.scoreRecord.updateMany({
     where: {
