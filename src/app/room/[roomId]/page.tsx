@@ -54,55 +54,55 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
   }
 
   const room = member.room;
-  
-  // Aggregate Leaderboard. This is simplified to just aggregate all ScoreRecords.
-  // We can fetch ScoreRecords for each member and sum them up.
   const memberIds = room.members.map(m => m.user.id);
   
-  // Robust 'today' calculation for various timezones
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   today.setHours(0, 0, 0, 0);
-  
-  // If we're in a timezone that's ahead of UTC, the DB might have "today" as the previous day UTC 18:30
   const startOfTodayUTC = new Date(today.getTime() - (12 * 60 * 60 * 1000));
 
-  const filterDate = startOfTodayUTC;
-  
-  const scores = await prisma.scoreRecord.groupBy({
-    by: ['userId'],
-    _sum: { finalScore: true, baseScore: true },
-    where: { 
-      userId: { in: memberIds },
-      date: { gte: filterDate }
-    }
-  });
-
-
-
-  const recentActivity = await prisma.codeSubmission.findMany({
-    where: { userId: { in: memberIds } },
-    include: {
-      user: true,
-      problemSubmit: true
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 50
-  });
-
-  const roomSubmissions = await prisma.problemSubmission.findMany({
-    where: { userId: { in: memberIds } },
-    include: { codeSubmissions: true }
-  });
-
-
-
-  const todayScores = await prisma.scoreRecord.findMany({
-    where: { 
-      userId: { in: memberIds },
-      date: { gte: startOfTodayUTC }
-    }
-  });
+  // 🚀 Parallel Data Fetching
+  const [scores, recentActivity, roomSubmissions, todayScores] = await Promise.all([
+    // 1. Aggregate Scores for the current cycle
+    prisma.scoreRecord.groupBy({
+      by: ['userId'],
+      _sum: { finalScore: true, baseScore: true },
+      where: { 
+        userId: { in: memberIds },
+        date: { gte: room.lastRestartedAt } // Only scores since restart
+      }
+    }),
+    // 2. Recent Activity Feed
+    prisma.codeSubmission.findMany({
+      where: { userId: { in: memberIds } },
+      include: {
+        user: true,
+        problemSubmit: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 20 // Reduced from 50 for speed
+    }),
+    // 3. Problem Submissions for the current cycle (Critical optimization)
+    prisma.problemSubmission.findMany({
+      where: { 
+        userId: { in: memberIds },
+        date: { gte: room.lastRestartedAt } // Only current cycle
+      },
+      include: { 
+        codeSubmissions: {
+          take: 1, // We only need the latest code evaluation for stats
+          orderBy: { createdAt: 'desc' }
+        } 
+      }
+    }),
+    // 4. Today's Specific Scores
+    prisma.scoreRecord.findMany({
+      where: { 
+        userId: { in: memberIds },
+        date: { gte: startOfTodayUTC }
+      }
+    })
+  ]);
 
   const userStats = memberIds.reduce((acc, uid) => {
     acc[uid] = { 
