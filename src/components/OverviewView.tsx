@@ -365,13 +365,3 @@ export function OverviewView({ user }: { user: any }) {
   );
 }
 
-// Ensure Code2 is locally defined if not already available in lucide
-function Code2(props: any) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-      <path d="m18 16 4-4-4-4" />
-      <path d="m6 8-4 4 4 4" />
-      <path d="m14.5 4-5 16" />
-    </svg>
-  )
-}
