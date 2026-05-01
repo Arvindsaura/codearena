@@ -63,17 +63,45 @@ export async function POST(req: Request, { params }: { params: { roomId: string 
     }
   });
 
-  // 4. Update Room Restart Date to TOMORROW at midnight
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  tomorrow.setHours(0, 0, 0, 0);
-
+  // 4. Update Room Restart Date to NOW
+  const restartTime = new Date();
   await prisma.room.update({
     where: { id: roomId },
-    data: { lastRestartedAt: tomorrow }
+    data: { lastRestartedAt: restartTime }
   });
 
-  // 5. Clear votes
+  // 5. Reset today's scores for all members so they start from zero immediately
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  await prisma.scoreRecord.updateMany({
+    where: {
+      userId: { in: memberIds },
+      date: today
+    },
+    data: {
+      baseScore: 0,
+      weightedScore: 0,
+      finalScore: 0,
+      streakBonus: 0,
+      speedBonus: 0
+    }
+  });
+
+  // 6. Reset AI metrics for today's submissions so they can be re-evaluated
+  await prisma.codeSubmission.updateMany({
+    where: {
+      userId: { in: memberIds },
+      date: today
+    },
+    data: {
+      codeQuality: 0,
+      complexityScore: 0,
+      aiReview: null
+    }
+  });
+
+  // 7. Clear votes
   await prisma.restartVote.deleteMany({ where: { roomId } });
 
   return NextResponse.json({ success: true, marathonId: marathon.id });

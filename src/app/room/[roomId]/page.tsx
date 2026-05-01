@@ -69,7 +69,7 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
       _sum: { finalScore: true, baseScore: true },
       where: { 
         userId: { in: memberIds },
-        date: { gte: room.lastRestartedAt } // Only scores since restart
+        date: { gte: new Date(new Date(room.lastRestartedAt).setHours(0, 0, 0, 0)) } // Start of the restart day
       }
     }),
     // 2. Recent Activity Feed
