@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -75,6 +76,9 @@ export async function POST(req: Request) {
       }
     });
   }
+
+  revalidatePath("/");
+  revalidatePath("/room/[roomId]");
 
   return NextResponse.json({ success: true, submission: updated });
 }
