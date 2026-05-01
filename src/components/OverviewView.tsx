@@ -5,8 +5,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Activity, Trophy, Zap, Flame, Calendar, BrainCircuit, RefreshCw } from "lucide-react";
+import { Activity, Trophy, Zap, Flame, Calendar, BrainCircuit, RefreshCw, Code2, Edit3, Save } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export function OverviewView({ user }: { user: any }) {
   const [submissions, setSubmissions] = useState([]);
@@ -44,19 +53,29 @@ export function OverviewView({ user }: { user: any }) {
   };
 
   const [isReevaluating, setIsReevaluating] = useState<string | null>(null);
+  const [showReevalModal, setShowReevalModal] = useState(false);
+  const [selectedSub, setSelectedSub] = useState<any>(null);
+  const [newCode, setNewCode] = useState("");
+  const [isUpdatingCode, setIsUpdatingCode] = useState(false);
 
-  const handleReevaluate = async (codeSubmissionId: string, problemId: string) => {
+  const handleReevaluate = async (codeSubmissionId: string, problemId: string, updatedCode?: string) => {
     setIsReevaluating(codeSubmissionId);
-    toast.info("Re-evaluating code quality with Groq AI...");
+    toast.info(updatedCode ? "Analyzing new code..." : "Re-evaluating code quality...");
     try {
       const res = await fetch("/api/code/review", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ codeSubmissionId }),
+        body: JSON.stringify({ 
+          codeSubmissionId,
+          newCode: updatedCode 
+        }),
       });
       if (res.ok) {
         toast.success("Re-evaluation complete!");
         fetchSubmissions();
+        setShowReevalModal(false);
+        setNewCode("");
+        setIsUpdatingCode(false);
       } else {
         toast.error("Evaluation failed. Try again.");
       }
@@ -220,7 +239,10 @@ export function OverviewView({ user }: { user: any }) {
                                  variant="ghost"
                                  size="sm"
                                  className="h-6 px-2 text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-fuchsia-400 hover:bg-fuchsia-500/10 gap-1.5 rounded-lg border border-white/5"
-                                 onClick={() => handleReevaluate(sub.codeSubmissions[0].id, sub.id)}
+                                 onClick={() => {
+                                   setSelectedSub(sub.codeSubmissions[0]);
+                                   setShowReevalModal(true);
+                                 }}
                                  disabled={isReevaluating === sub.codeSubmissions[0].id}
                                 >
                                  <RefreshCw className={`w-3 h-3 ${isReevaluating === sub.codeSubmissions[0].id ? "animate-spin" : ""}`} />
@@ -266,6 +288,79 @@ export function OverviewView({ user }: { user: any }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Re-evaluation Modal */}
+      <Dialog open={showReevalModal} onOpenChange={setShowReevalModal}>
+        <DialogContent className="sm:max-w-[600px] bg-zinc-950 border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RefreshCw className="w-5 h-5 text-fuchsia-400" />
+              Choose Re-evaluation Method
+            </DialogTitle>
+            <DialogDescription className="text-zinc-500">
+              Would you like to re-run the AI on your previous code or submit an updated solution?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            {!isUpdatingCode ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Button 
+                  variant="outline" 
+                  className="h-32 flex flex-col gap-2 border-white/5 bg-zinc-900/50 hover:bg-zinc-900 hover:border-fuchsia-500/50 group"
+                  onClick={() => handleReevaluate(selectedSub.id, selectedSub.id)}
+                  disabled={!!isReevaluating}
+                >
+                  <RefreshCw className={`w-6 h-6 text-zinc-500 group-hover:text-fuchsia-400 ${isReevaluating ? "animate-spin" : ""}`} />
+                  <div className="text-center">
+                    <div className="font-bold">Keep Previous Code</div>
+                    <div className="text-[10px] text-zinc-500">Re-run AI analysis on current submission</div>
+                  </div>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="h-32 flex flex-col gap-2 border-white/5 bg-zinc-900/50 hover:bg-zinc-900 hover:border-fuchsia-500/50 group"
+                  onClick={() => setIsUpdatingCode(true)}
+                  disabled={!!isReevaluating}
+                >
+                  <Edit3 className="w-6 h-6 text-zinc-500 group-hover:text-fuchsia-400" />
+                  <div className="text-center">
+                    <div className="font-bold">Update with New Code</div>
+                    <div className="text-[10px] text-zinc-500">Paste your improved solution</div>
+                  </div>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
+                    <Save className="w-3 h-3" /> Improved Solution
+                  </h4>
+                  <Textarea 
+                    placeholder="Paste your updated C++/Java/Python/JS code here..."
+                    className="min-h-[300px] bg-black/40 border-white/10 font-mono text-xs focus:border-fuchsia-500/50 resize-none"
+                    value={newCode}
+                    onChange={(e) => setNewCode(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" className="flex-1 text-zinc-500" onClick={() => { setIsUpdatingCode(false); setNewCode(""); }}>
+                    Cancel
+                  </Button>
+                  <Button 
+                    className="flex-1 bg-fuchsia-600 hover:bg-fuchsia-700 font-bold"
+                    disabled={!newCode.trim() || !!isReevaluating}
+                    onClick={() => handleReevaluate(selectedSub.id, selectedSub.id, newCode)}
+                  >
+                    {isReevaluating ? <RefreshCw className="w-4 h-4 animate-spin mr-2" /> : <Zap className="w-4 h-4 mr-2" />}
+                    Confirm & Re-evaluate
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

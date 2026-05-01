@@ -8,15 +8,23 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const { codeSubmissionId } = await req.json();
+  const { codeSubmissionId, newCode } = await req.json();
   if (!codeSubmissionId) return NextResponse.json({ error: "Missing ID" }, { status: 400 });
 
-  const codeSub = await prisma.codeSubmission.findUnique({
+  let codeSub = await prisma.codeSubmission.findUnique({
     where: { id: codeSubmissionId }
   });
 
   if (!codeSub || codeSub.userId !== session.user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // If new code is provided, update it first
+  if (newCode) {
+    codeSub = await prisma.codeSubmission.update({
+      where: { id: codeSubmissionId },
+      data: { code: newCode }
+    });
   }
 
   const aiResult = await analyzeCode(codeSub.code);
