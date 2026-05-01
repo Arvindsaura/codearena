@@ -2,9 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Trophy, Calendar, Code, User, ArrowLeft } from "lucide-react";
+import { Trophy, Calendar, Code, User, ArrowLeft, History } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
 export default async function MarathonsPage({ params }: { params: { roomId: string } }) {
   const session = await getServerSession(authOptions);
@@ -78,9 +79,9 @@ export default async function MarathonsPage({ params }: { params: { roomId: stri
                 </div>
                 <div className="flex -space-x-2">
                    {marathon.results.slice(0, 5).map((res) => (
-                     <div key={res.id} className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-[10px] font-bold overflow-hidden" title={res.user.name || ""}>
-                       {res.user.image ? <img src={res.user.image} alt="" /> : (res.user.name?.[0] || "?")}
-                     </div>
+                      <div key={res.id} className="w-8 h-8 rounded-full border-2 border-zinc-900 bg-zinc-800 flex items-center justify-center text-[10px] font-bold overflow-hidden relative" title={res.user.name || ""}>
+                        {res.user.image ? <Image src={res.user.image} alt="" fill className="object-cover" /> : (res.user.name?.[0] || "?")}
+                      </div>
                    ))}
                 </div>
               </div>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Loader2, Camera, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 const AVATAR_PRESETS = [
   "https://api.dicebear.com/7.x/pixel-art/svg?seed=Felix",
@@ -76,7 +77,9 @@ export function ProfileEditForm({ user }: { user: any }) {
                   selectedImage === url ? "border-fuchsia-500 ring-4 ring-fuchsia-500/20" : "border-white/5 grayscale hover:grayscale-0"
                 }`}
               >
-                <img src={url} alt="Avatar Preset" className="w-full aspect-square" />
+                <div className="relative w-full aspect-square">
+                  <Image src={url} alt="Avatar Preset" fill className="object-cover" />
+                </div>
                 {selectedImage === url && (
                   <div className="absolute inset-0 bg-fuchsia-500/10 flex items-center justify-center">
                     <Check className="h-6 w-6 text-fuchsia-500" />

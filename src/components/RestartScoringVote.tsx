@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { RotateCcw, Users, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ export function RestartScoringVote({ roomId }: { roomId: string }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const router = useRouter();
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const res = await fetch(`/api/room/${roomId}/vote`);
       if (res.ok) {
@@ -21,13 +21,13 @@ export function RestartScoringVote({ roomId }: { roomId: string }) {
         setStats(data);
       }
     } catch (e) { /* ignore */ }
-  };
+  }, [roomId]);
 
   useEffect(() => {
     fetchStats();
     const interval = setInterval(fetchStats, 5000); // Poll every 5s
     return () => clearInterval(interval);
-  }, [roomId]);
+  }, [fetchStats]);
 
   const toggleVote = async () => {
     setIsLoading(true);
