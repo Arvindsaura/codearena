@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Already submitted today" }, { status: 400 });
   }
 
-  const { codeQuality, complexityScore, review } = await analyzeCode(code);
+  const aiResult = await analyzeCode(code);
 
   const newCodeSubmission = await prisma.codeSubmission.create({
     data: {
@@ -38,11 +38,23 @@ export async function POST(req: Request) {
       submissionId,
       code,
       date: today,
-      codeQuality,
-      complexityScore,
-      aiReview: review
+      codeQuality: aiResult.codeQuality,
+      complexityScore: aiResult.complexityScore,
+      aiReview: aiResult.formattedReview,
+      algorithmElegance: aiResult.algorithmElegance,
+      approachCleverness: aiResult.approachCleverness,
+      codeStructure: aiResult.codeStructure,
+      optimizationLevel: aiResult.optimizationLevel,
+      robustness: aiResult.robustness,
+      patternUsage: aiResult.patternUsage,
+      constraintHandling: aiResult.constraintHandling,
+      codeClarity: aiResult.codeClarity,
+      microOptimizations: aiResult.microOptimizations,
+      riskFactor: aiResult.riskFactor
     }
   });
+
+  const { codeQuality, complexityScore } = aiResult;
 
   // Re-calculate user's BaseScore and Update ScoreRecord later in a cron or synchronously here
   // The Prompt requires an advanced scoring system. We can calculate it here for immediate feedback, 
@@ -53,20 +65,40 @@ export async function POST(req: Request) {
   });
   
   if (problemSub) {
-    // Scoring logic
-    let attemptScore = 0;
-    if (problemSub.attempts === 1) attemptScore = 6;
-    else if (problemSub.attempts === 2) attemptScore = 4;
-    else if (problemSub.attempts === 3) attemptScore = 2;
-    else if (problemSub.attempts > 5) attemptScore = -2;
-    else attemptScore = 0; // > 3 attempts
+    // 1. Base Score from AI (max 20)
+    const baseScore = codeQuality + complexityScore;
 
-    const baseScore = attemptScore + codeQuality + complexityScore;
-    const diffMult = problemSub.difficulty === "Easy" ? 1.0 : problemSub.difficulty === "Hard" ? 2.2 : 1.5;
-    const weightedScore = baseScore * diffMult;
+    // 2. Difficulty Multiplier
+    const multiplier = problemSub.difficulty === "Medium" ? 1.5 : problemSub.difficulty === "Hard" ? 2.0 : 1.0;
+    const weightedScore = baseScore * multiplier;
 
-    // Simple streaks/speed bonus would need more history lookup.
-    // We'll update just weightedScore for now.
+    // 3. Streak Bonus (50 pts if streak >= 10 days)
+    // Fetch user's active dates from ScoreRecord to calculate streak
+    const pastRecords = await prisma.scoreRecord.findMany({
+      where: { userId: session.user.id },
+      select: { date: true },
+      distinct: ["date"],
+      orderBy: { date: "desc" },
+    });
+
+    const activeDates = pastRecords.map(r => new Date(r.date).getTime());
+    const uniqueDates = Array.from(new Set(activeDates)).sort((a, b) => b - a);
+    
+    let currentStreak = 1; // Start with today's submission
+    const ONE_DAY = 86400000;
+    let checkDate = today.getTime() - ONE_DAY;
+
+    for (const dateMs of uniqueDates) {
+      if (dateMs === checkDate) {
+        currentStreak++;
+        checkDate -= ONE_DAY;
+      } else if (dateMs < checkDate) {
+        break;
+      }
+    }
+
+    const streakBonus = currentStreak >= 10 ? 50 : 0;
+    const finalScore = weightedScore + streakBonus;
 
     const scoreRec = await prisma.scoreRecord.upsert({
       where: {
@@ -76,13 +108,17 @@ export async function POST(req: Request) {
         userId: session.user.id,
         date: today,
         baseScore,
+        difficultyMult: multiplier,
         weightedScore,
-        finalScore: weightedScore // Not adding streaks for brevity
+        streakBonus,
+        finalScore
       },
       update: {
         baseScore: { increment: baseScore },
+        difficultyMult: multiplier, // Keep the highest multiplier of the day if multiple submissions
         weightedScore: { increment: weightedScore },
-        finalScore: { increment: weightedScore }
+        streakBonus: streakBonus, // This would be 50 if they hit the streak today
+        finalScore: { increment: finalScore }
       }
     });
   }

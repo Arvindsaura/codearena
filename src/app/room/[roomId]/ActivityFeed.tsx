@@ -4,7 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
+import { useState } from "react";
+
 export function ActivityFeed({ activity }: { activity: any[] }) {
+  const [showAll, setShowAll] = useState(false);
+  
   if (!activity || activity.length === 0) {
     return (
       <Card className="mt-8">
@@ -16,15 +20,30 @@ export function ActivityFeed({ activity }: { activity: any[] }) {
     );
   }
 
+  const displayCount = showAll ? activity.length : 5;
+  const visibleActivity = activity.slice(0, displayCount);
+
   return (
     <Card className="mt-8">
-      <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>See what others are solving and learning.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0">
+        <div>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>See what others are solving and learning.</CardDescription>
+        </div>
+        {activity.length > 5 && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => setShowAll(!showAll)}
+            className="text-xs text-muted-foreground hover:text-primary"
+          >
+            {showAll ? "Show Less" : `View All (${activity.length})`}
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {activity.map((sub) => (
+          {visibleActivity.map((sub) => (
             <div key={sub.id} className="flex justify-between items-center p-4 border rounded-lg">
               <div>
                 <div className="flex items-center gap-2">
@@ -38,8 +57,8 @@ export function ActivityFeed({ activity }: { activity: any[] }) {
                   <p className="font-semibold">{sub.user.name || sub.user.email} <span className="text-muted-foreground font-normal">solved</span> {sub.problemSlug}</p>
                 </div>
                 <div className="flex gap-4 mt-1 text-xs text-muted-foreground">
-                  <span>Quality: <span className="text-primary font-bold">{sub.codeQuality}/3</span></span>
-                  <span>Complexity: <span className="text-primary font-bold">{sub.complexityScore}/5</span></span>
+                  <span>Quality: <span className="text-primary font-bold">{sub.codeQuality?.toFixed(1)}/10</span></span>
+                  <span>Complexity: <span className="text-primary font-bold">{sub.complexityScore?.toFixed(1)}/10</span></span>
                   {sub.problemSubmit && (
                     <span>Attempts: <span className="font-bold">{sub.problemSubmit.attempts}</span></span>
                   )}
@@ -53,9 +72,9 @@ export function ActivityFeed({ activity }: { activity: any[] }) {
                   <DialogContent className="max-w-3xl">
                     <DialogHeader>
                       <DialogTitle>{sub.user.name}&apos;s Solution for {sub.problemSlug}</DialogTitle>
-                      <DialogDescription>
-                        AI Scores • Quality: {sub.codeQuality}/3 • Complexity: {sub.complexityScore}/5
-                      </DialogDescription>
+                      <DialogHeader className="text-xs text-muted-foreground">
+                        AI Scores • Quality: {sub.codeQuality?.toFixed(1)}/10 • Complexity: {sub.complexityScore?.toFixed(1)}/10
+                      </DialogHeader>
                     </DialogHeader>
                     <div className="mt-4 bg-muted p-4 rounded-md overflow-auto max-h-[40vh]">
                       <pre className="font-mono text-sm"><code>{sub.code}</code></pre>

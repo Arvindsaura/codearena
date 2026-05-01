@@ -102,7 +102,44 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1, h2, h3, h4, h5, h6, [class*="CardTitle"] {
+    @apply font-bold tracking-tight;
+  }
+  
+  th {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wider;
+  }
+
+  .font-pixel {
+    font-family: var(--font-pixel), monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
   html {
     @apply font-sans;
   }
+}
+
+.markdown-content h3 {
+  @apply text-sm font-black text-fuchsia-500 uppercase tracking-widest mt-6 mb-3 first:mt-0;
+}
+
+.markdown-content p {
+  @apply mb-3;
+}
+
+.markdown-content ul {
+  @apply list-disc list-inside space-y-2 mb-4;
+}
+
+.markdown-content li {
+  @apply text-zinc-400 font-medium ml-2;
+}
+
+.markdown-content li strong {
+  @apply text-zinc-300 font-black;
+}
+
+.markdown-content code {
+  @apply bg-zinc-800 px-1.5 py-0.5 rounded text-fuchsia-400 font-mono text-[10px];
 }

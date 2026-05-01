@@ -22,6 +22,10 @@ model User {
   codeSubmits   CodeSubmission[]
   scoreRecords  ScoreRecord[]
   contestResults ContestResult[]
+  marathonResults MarathonResult[]
+  restartVotes  RestartVote[]
+  
+
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -68,10 +72,37 @@ model Room {
   code      String   @unique
   createdBy String
   
-  members   RoomMember[]
+  lastRestartedAt DateTime @default(now())
   
+  members   RoomMember[]
+  marathons Marathon[]
+  
+  restartVotes RestartVote[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Marathon {
+  id        String   @id @default(cuid())
+  roomId    String
+  name      String
+  startedAt DateTime @default(now())
+  endedAt   DateTime @default(now())
+  
+  results   MarathonResult[]
+  
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model MarathonResult {
+  id         String   @id @default(cuid())
+  marathonId String
+  userId     String
+  score      Float
+  rank       Int
+  
+  marathon   Marathon @relation(fields: [marathonId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model RoomMember {
@@ -115,9 +146,21 @@ model CodeSubmission {
   code           String
   date           DateTime
   
-  codeQuality    Int?
-  complexityScore Int?
-  aiReview       String?
+  codeQuality    Float?
+  complexityScore Float?
+  aiReview       String? @db.Text
+  
+  // Detailed AI Metrics
+  algorithmElegance  Float?
+  approachCleverness Float?
+  codeStructure      Float?
+  optimizationLevel  Float?
+  robustness         Float?
+  patternUsage       Float?
+  constraintHandling Float?
+  codeClarity        Float?
+  microOptimizations Float?
+  riskFactor         Float?
   
   problemSubmit  ProblemSubmission? @relation(fields: [submissionId], references: [id], onDelete: SetNull)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -173,4 +216,16 @@ model ContestResult {
   createdAt      DateTime @default(now())
 
   @@unique([userId, contestId])
+}
+
+model RestartVote {
+  id        String   @id @default(cuid())
+  roomId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, userId])
 }

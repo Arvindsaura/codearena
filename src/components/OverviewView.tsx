@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Activity, Trophy, Zap, Flame, Calendar, BrainCircuit } from "lucide-react";
+import { Activity, Trophy, Zap, Flame, Calendar, BrainCircuit, RefreshCw } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 export function OverviewView({ user }: { user: any }) {
   const [submissions, setSubmissions] = useState([]);
@@ -40,6 +41,30 @@ export function OverviewView({ user }: { user: any }) {
       // Ignore
     }
     setIsLoading(false);
+  };
+
+  const [isReevaluating, setIsReevaluating] = useState<string | null>(null);
+
+  const handleReevaluate = async (codeSubmissionId: string, problemId: string) => {
+    setIsReevaluating(codeSubmissionId);
+    toast.info("Re-evaluating code quality with Groq AI...");
+    try {
+      const res = await fetch("/api/code/review", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ codeSubmissionId }),
+      });
+      if (res.ok) {
+        toast.success("Re-evaluation complete!");
+        fetchSubmissions();
+      } else {
+        toast.error("Evaluation failed. Try again.");
+      }
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setIsReevaluating(null);
+    }
   };
 
   return (
@@ -170,11 +195,11 @@ export function OverviewView({ user }: { user: any }) {
                       <div className="flex flex-wrap gap-4">
                         <div className="bg-fuchsia-500/10 border border-fuchsia-500/20 px-3 py-1.5 rounded-xl">
                           <span className="text-[10px] text-fuchsia-300 block font-bold uppercase">Quality Score</span>
-                          <span className="text-lg font-black text-fuchsia-400">{sub.codeSubmissions[0].codeQuality}/3</span>
+                          <span className="text-lg font-black text-fuchsia-400">{sub.codeSubmissions[0].codeQuality}/10</span>
                         </div>
                         <div className="bg-cyan-500/10 border border-cyan-500/20 px-3 py-1.5 rounded-xl">
                           <span className="text-[10px] text-cyan-300 block font-bold uppercase">Complexity</span>
-                          <span className="text-lg font-black text-cyan-400">{sub.codeSubmissions[0].complexityScore}/5</span>
+                          <span className="text-lg font-black text-cyan-400">{sub.codeSubmissions[0].complexityScore}/10</span>
                         </div>
                         <div className="bg-zinc-800/50 border border-white/5 px-3 py-1.5 rounded-xl">
                           <span className="text-[10px] text-zinc-500 block font-bold uppercase">Attempts</span>
@@ -187,11 +212,23 @@ export function OverviewView({ user }: { user: any }) {
                            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover/review:opacity-20 transition-opacity">
                              <BrainCircuit className="w-12 h-12 text-fuchsia-500" />
                            </div>
-                           <h5 className="text-[10px] font-black text-fuchsia-500 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                             <Zap className="w-3 h-3" /> Gemini AI Insight
-                           </h5>
-                           <div className="text-xs text-zinc-400 leading-relaxed font-medium">
-                             {sub.codeSubmissions[0].aiReview}
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                               <h5 className="text-[10px] font-black text-fuchsia-500 uppercase tracking-[0.2em] flex items-center gap-2">
+                                 <Zap className="w-3 h-3" /> Groq AI Insight
+                               </h5>
+                               <Button
+                                 variant="ghost"
+                                 size="sm"
+                                 className="h-6 px-2 text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-fuchsia-400 hover:bg-fuchsia-500/10 gap-1.5 rounded-lg border border-white/5"
+                                 onClick={() => handleReevaluate(sub.codeSubmissions[0].id, sub.id)}
+                                 disabled={isReevaluating === sub.codeSubmissions[0].id}
+                                >
+                                 <RefreshCw className={`w-3 h-3 ${isReevaluating === sub.codeSubmissions[0].id ? "animate-spin" : ""}`} />
+                                 Re-evaluate
+                               </Button>
+                            </div>
+                           <div className="text-xs text-zinc-400 leading-relaxed font-medium markdown-content">
+                             <ReactMarkdown>{sub.codeSubmissions[0].aiReview}</ReactMarkdown>
                            </div>
                         </div>
                       ) : (
@@ -200,7 +237,7 @@ export function OverviewView({ user }: { user: any }) {
                           size="sm"
                           className="w-full py-6 rounded-2xl border-dashed border-fuchsia-500/30 text-fuchsia-400 hover:bg-fuchsia-500/5 transition-all"
                           onClick={async () => {
-                            toast.info("Analyzing code quality with Gemini AI...");
+                            toast.info("Analyzing code quality with Groq AI...");
                             try {
                               const res = await fetch("/api/code/review", {
                                 method: "POST",
@@ -211,7 +248,7 @@ export function OverviewView({ user }: { user: any }) {
                                 toast.success("AI review complete!");
                                 fetchSubmissions();
                               } else {
-                                toast.error("Gemini is currently busy. Try again soon.");
+                                toast.error("Groq is currently busy. Try again soon.");
                               }
                             } catch {
                               toast.error("Network error during analysis.");

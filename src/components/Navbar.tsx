@@ -46,7 +46,7 @@ export function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile">Profile Settings</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => signOut()}>Log out</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: window.location.origin })}>Log out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}

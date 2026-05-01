@@ -8,12 +8,16 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 export function RoomsView({ user }: { user: any }) {
   const [rooms, setRooms] = useState([]);
   const [joinCode, setJoinCode] = useState("");
   const [newRoomName, setNewRoomName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isJoining, setIsJoining] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -33,6 +37,7 @@ export function RoomsView({ user }: { user: any }) {
   }, []);
 
   const handleCreateRoom = async () => {
+    setIsCreating(true);
     try {
       const res = await fetch("/api/rooms", {
         method: "POST",
@@ -48,10 +53,13 @@ export function RoomsView({ user }: { user: any }) {
       }
     } catch (e) {
       toast.error("Error creating room.");
+    } finally {
+      setIsCreating(false);
     }
   };
 
   const handleJoinRoom = async () => {
+    setIsJoining(true);
     try {
       const res = await fetch("/api/rooms/join", {
         method: "POST",
@@ -67,6 +75,8 @@ export function RoomsView({ user }: { user: any }) {
       }
     } catch (e) {
       toast.error("Error joining room.");
+    } finally {
+      setIsJoining(false);
     }
   };
 
@@ -79,7 +89,11 @@ export function RoomsView({ user }: { user: any }) {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-sm">Loading rooms...</p>
+            <div className="space-y-3">
+              {[1, 2, 3].map(i => (
+                <Skeleton key={i} className="h-16 w-full rounded-md" />
+              ))}
+            </div>
           ) : rooms.length === 0 ? (
             <p className="text-sm text-muted-foreground">You haven&apos;t joined any rooms yet.</p>
           ) : (
@@ -112,7 +126,10 @@ export function RoomsView({ user }: { user: any }) {
                 value={joinCode} 
                 onChange={e => setJoinCode(e.target.value)}
               />
-              <Button onClick={handleJoinRoom} disabled={!joinCode}>Join</Button>
+              <Button onClick={handleJoinRoom} disabled={!joinCode || isJoining}>
+                {isJoining && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Join
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -142,7 +159,10 @@ export function RoomsView({ user }: { user: any }) {
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button onClick={handleCreateRoom} disabled={!newRoomName}>Create</Button>
+                  <Button onClick={handleCreateRoom} disabled={!newRoomName || isCreating}>
+                    {isCreating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
