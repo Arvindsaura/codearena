@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import useSWR, { mutate } from "swr";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -18,39 +19,24 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 export function OverviewView({ user }: { user: any }) {
-  const [submissions, setSubmissions] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [streak, setStreak] = useState({ streak: 0, longestStreak: 0, totalDays: 0 });
-  const router = useRouter();
+  const fetcher = (url: string) => fetch(url).then(res => res.json());
 
-  useEffect(() => {
-    fetchSubmissions();
-    fetchStreak();
-  }, []);
+  // 🔄 Use SWR for automatic caching and background revalidation
+  const { data: submissionsData, isLoading: isLoadingSubmissions, mutate: mutateSubmissions } = useSWR(
+    "/api/leetcode/sync", 
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
 
-  const fetchStreak = async () => {
-    try {
-      const res = await fetch("/api/user/streak");
-      if (res.ok) {
-        const data = await res.json();
-        setStreak(data);
-      }
-    } catch (e) { /* ignore */ }
-  };
+  const { data: streakData } = useSWR(
+    "/api/user/streak", 
+    fetcher,
+    { revalidateOnFocus: false, dedupingInterval: 60000 }
+  );
 
-  const fetchSubmissions = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/leetcode/sync");
-      if (res.ok) {
-        const data = await res.json();
-        setSubmissions(data.submissions || []);
-      }
-    } catch (e) {
-      // Ignore
-    }
-    setIsLoading(false);
-  };
+  const submissions = submissionsData?.submissions || [];
+  const streak = streakData || { streak: 0, longestStreak: 0, totalDays: 0 };
+  const isLoading = isLoadingSubmissions;
 
   const [isReevaluating, setIsReevaluating] = useState<string | null>(null);
   const [showReevalModal, setShowReevalModal] = useState(false);
@@ -72,7 +58,8 @@ export function OverviewView({ user }: { user: any }) {
       });
       if (res.ok) {
         toast.success("Re-evaluation complete!");
-        fetchSubmissions();
+        mutateSubmissions();
+        mutate("/api/user/streak"); // Also refresh streak if score affects it
         setShowReevalModal(false);
         setNewCode("");
         setIsUpdatingCode(false);
@@ -101,7 +88,7 @@ export function OverviewView({ user }: { user: any }) {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={fetchSubmissions} 
+          onClick={() => mutateSubmissions()} 
           disabled={isLoading}
           className="bg-zinc-800/50 border-white/10 hover:bg-zinc-800"
         >
@@ -268,7 +255,8 @@ export function OverviewView({ user }: { user: any }) {
                               });
                               if (res.ok) {
                                 toast.success("AI review complete!");
-                                fetchSubmissions();
+                                mutateSubmissions();
+                                mutate("/api/user/streak");
                               } else {
                                 toast.error("Groq is currently busy. Try again soon.");
                               }
