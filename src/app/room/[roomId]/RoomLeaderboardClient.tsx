@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScoreDetailsDialog } from "@/components/ScoreDetailsDialog";
 import { Crown, Flame, Sparkles, Zap } from "lucide-react";
+import { ActivityFeed } from "./ActivityFeed";
 
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
@@ -199,6 +200,8 @@ export function RoomLeaderboardClient({ roomId, initialData }: { roomId: string,
           </Table>
         </CardContent>
       </Card>
+
+      <ActivityFeed activity={data.recentActivity || []} />
     </div>
   );
 }

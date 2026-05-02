@@ -63,6 +63,12 @@ export async function GET(req: Request, { params }: { params: { roomId: string }
         userId: { in: memberIds },
         date: { gte: todayStart }
       }
+    }),
+    prisma.codeSubmission.findMany({
+      where: { userId: { in: memberIds } },
+      include: { user: true, problemSubmit: true },
+      orderBy: { createdAt: 'desc' },
+      take: 20
     })
   ]);
 
@@ -70,6 +76,7 @@ export async function GET(req: Request, { params }: { params: { roomId: string }
     scores, 
     roomSubmissions, 
     todayScores,
+    recentActivity,
     roomMembers: room.members,
     marathonStart,
     todayStart
