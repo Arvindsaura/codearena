@@ -201,7 +201,7 @@ export function RoomLeaderboardClient({ roomId, initialData }: { roomId: string,
         </CardContent>
       </Card>
 
-      <ActivityFeed activity={data.recentActivity || []} />
+      <ActivityFeed activity={data?.recentActivity || []} />
     </div>
   );
 }
