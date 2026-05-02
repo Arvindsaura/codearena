@@ -19,6 +19,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 
 export function OverviewView({ user }: { user: any }) {
+  const router = useRouter();
   const fetcher = (url: string) => fetch(url).then(res => res.json());
 
   // 🔄 Use SWR for automatic caching and background revalidation
