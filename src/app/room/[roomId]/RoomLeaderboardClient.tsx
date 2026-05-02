@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import useSWR from "swr";
 import { Podium } from "@/components/Podium";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScoreDetailsDialog } from "@/components/ScoreDetailsDialog";
@@ -12,17 +13,17 @@ import { ActivityFeed } from "./ActivityFeed";
 const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 export function RoomLeaderboardClient({ roomId, initialData }: { roomId: string, initialData?: any }) {
-  const { data, isLoading } = useSWR(`/api/room/${roomId}/leaderboard`, fetcher, {
-    fallbackData: initialData,
-    revalidateOnFocus: false,
-    dedupingInterval: 30000
+  const { data, isLoading, error, mutate: refreshStandings } = useSWR(`/api/room/${roomId}/leaderboard`, fetcher, {
+    revalidateOnFocus: true,
+    refreshInterval: 10000,
+    dedupingInterval: 5000
   });
 
   const processedData = useMemo(() => {
-    if (!data) return { leaderboard: [], userStats: {} };
+    if (!data || data.error || !data.roomMembers) return { leaderboard: [], userStats: {} };
 
     const { scores, roomSubmissions, todayScores, roomMembers } = data;
-    const memberIds = roomMembers.map((m: any) => m.user.id);
+    const memberIds = roomMembers.map((m: any) => m.user?.id).filter(Boolean);
 
     const userStats = memberIds.reduce((acc: any, uid: string) => {
       acc[uid] = { 
@@ -106,16 +107,28 @@ export function RoomLeaderboardClient({ roomId, initialData }: { roomId: string,
 
   const { leaderboard, userStats } = processedData;
 
+  if (error || (data && data.error)) {
+      return (
+        <Card className="border-red-500/20 bg-red-500/5">
+          <CardContent className="py-10 text-center">
+            <p className="text-red-400 font-bold">Failed to load leaderboard standings.</p>
+            <p className="text-red-400/60 text-xs mt-1">{error?.message || data?.error || "Unknown error"}</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => refreshStandings()}>
+              Retry Sync
+            </Button>
+          </CardContent>
+        </Card>
+      );
+  }
+
   if (isLoading && !data) {
       return (
         <div className="space-y-8 animate-pulse">
-          {/* Podium Skeleton */}
           <div className="grid grid-cols-3 gap-4 h-64 items-end">
             <div className="bg-zinc-900/50 h-32 rounded-2xl border border-white/5" />
             <div className="bg-zinc-900/80 h-48 rounded-2xl border border-white/10" />
             <div className="bg-zinc-900/50 h-24 rounded-2xl border border-white/5" />
           </div>
-          {/* Table Skeleton */}
           <Card className="border-white/5 bg-zinc-900/30">
             <CardHeader className="pb-2 border-b border-white/5">
               <div className="h-6 w-32 bg-zinc-800 rounded mb-2" />
@@ -141,6 +154,16 @@ export function RoomLeaderboardClient({ roomId, initialData }: { roomId: string,
             </CardContent>
           </Card>
         </div>
+      );
+  }
+
+  if (data && (!data.roomMembers || data.roomMembers.length === 0)) {
+      return (
+        <Card className="border-white/5 bg-zinc-900/30">
+          <CardContent className="py-10 text-center text-muted-foreground">
+            No members found in this room.
+          </CardContent>
+        </Card>
       );
   }
 

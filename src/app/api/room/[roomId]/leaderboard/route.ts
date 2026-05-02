@@ -37,7 +37,7 @@ export async function GET(req: Request, { params }: { params: { roomId: string }
   const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const marathonStart = new Date(new Date(room.lastRestartedAt).setUTCHours(0, 0, 0, 0));
 
-  const [scores, roomSubmissions, todayScores] = await Promise.all([
+  const [scores, roomSubmissions, todayScores, recentActivity] = await Promise.all([
     prisma.scoreRecord.groupBy({
       by: ['userId'],
       _sum: { finalScore: true, baseScore: true },
