@@ -210,7 +210,7 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
                   <TableRow>
                     <TableHead className="w-[80px]">Rank</TableHead>
                     <TableHead>User</TableHead>
-                    <TableHead className="text-right">Base Score</TableHead>
+                    <TableHead className="text-right">Previous Score</TableHead>
                     <TableHead className="text-right">Today&apos;s Score</TableHead>
                     <TableHead className="text-right text-primary">Final Score</TableHead>
                   </TableRow>
@@ -246,7 +246,7 @@ export default async function RoomPage({ params }: { params: { roomId: string } 
                            quality={userStats[entry.user.id]?.avgQuality || 0}
                            complexity={userStats[entry.user.id]?.avgComplexity || 0}
                        />
-                       <span>{entry.baseScore.toFixed(1)}</span>
+                       <span>{(entry.totalScore - (userStats[entry.user.id]?.today?.finalScore || 0)).toFixed(1)}</span>
                     </TableCell>
                     <TableCell className="text-right">
                       {userStats[entry.user.id]?.today ? (
