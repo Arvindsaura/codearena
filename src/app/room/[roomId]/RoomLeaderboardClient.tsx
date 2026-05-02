@@ -107,7 +107,41 @@ export function RoomLeaderboardClient({ roomId, initialData }: { roomId: string,
   const { leaderboard, userStats } = processedData;
 
   if (isLoading && !data) {
-      return <div className="h-96 flex items-center justify-center text-muted-foreground italic">Syncing live standings...</div>
+      return (
+        <div className="space-y-8 animate-pulse">
+          {/* Podium Skeleton */}
+          <div className="grid grid-cols-3 gap-4 h-64 items-end">
+            <div className="bg-zinc-900/50 h-32 rounded-2xl border border-white/5" />
+            <div className="bg-zinc-900/80 h-48 rounded-2xl border border-white/10" />
+            <div className="bg-zinc-900/50 h-24 rounded-2xl border border-white/5" />
+          </div>
+          {/* Table Skeleton */}
+          <Card className="border-white/5 bg-zinc-900/30">
+            <CardHeader className="pb-2 border-b border-white/5">
+              <div className="h-6 w-32 bg-zinc-800 rounded mb-2" />
+              <div className="h-4 w-64 bg-zinc-800/50 rounded" />
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 bg-zinc-800 rounded-lg" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-zinc-800 rounded" />
+                      <div className="h-3 w-20 bg-zinc-800/50 rounded" />
+                    </div>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="h-4 w-12 bg-zinc-800 rounded" />
+                    <div className="h-4 w-12 bg-zinc-800 rounded" />
+                    <div className="h-4 w-12 bg-zinc-800 rounded" />
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+      );
   }
 
   return (
